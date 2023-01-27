@@ -55,35 +55,36 @@ spec:
         karpenter.sh/provisioner-name: default
       serviceAccountName: appsimulator
       containers:
-        - name: app
-          lifecycle:
-            preStop:
-              exec:
-                command: ["/bin/sh", "-c", "sed -i 's/health/nothealthy/g' /usr/src/app/logistics/health.py && sleep 120"]
+      - name: app
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sed -i 's/health/nothealthy/g' /usr/src/app/logistics/health.py && sleep 120"]
         volumeMounts:
         - name: secrets-store-orders
           mountPath: "/mnt/secrets"
         env:
         - name: SECRET_FILE
           value: "/mnt/secrets/${SECRET}"
-          #envFrom:
-          #  - secretRef:
-          #      name: orders
-          readinessProbe:
-            httpGet:
-              path: /logistics/health
-              port: 8000
-            initialDelaySeconds: 3
-            periodSeconds: 3
-          image: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/djangoapp:py39${INSTANCE_ARCH}64
-          imagePullPolicy: Always
-          command: ["/usr/src/app/start.sh"]
-          resources:
-            requests:
-              cpu: 512m
-              memory: 512Mi
-          ports:
-            - containerPort: 8000
+        #- name: app
+        #  envFrom:
+        #    - secretRef:
+        #        name: orders
+        readinessProbe:
+          httpGet:
+            path: /logistics/todaysorders/
+            port: 8000
+          initialDelaySeconds: 3
+          periodSeconds: 3
+        image: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/djangoapp:${APP_IMAGE_TAG}
+        imagePullPolicy: Always
+        command: ["/usr/src/app/start.sh"]
+        resources:
+          requests:
+            cpu: 512m
+            memory: 512Mi
+        ports:
+          - containerPort: 8000
       volumes:
       - name: secrets-store-orders
         csi:
